@@ -56,9 +56,9 @@ class PostFormsTests(TestCase):
             self.post_create,
             data=form_data,
             follow=True
-            )
+        )
         self.assertRedirects(response, self.post_profile)
-        self.assertEqual(Post.objects.count(), post_count+1)
+        self.assertEqual(Post.objects.count(), post_count + 1)
         self.assertTrue(
             Post.objects.filter(
                 author=self.user,

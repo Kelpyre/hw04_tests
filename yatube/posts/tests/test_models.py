@@ -28,7 +28,7 @@ class PostModelTest(TestCase):
         task_list = {
             post_task: 'Тестовый пост',
             group_task: 'Тестовая группа'
-            }
+        }
         for task, value in task_list.items():
             with self.subTest(task=task):
                 self.assertEqual(task, value)
