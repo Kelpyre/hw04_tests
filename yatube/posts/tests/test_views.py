@@ -37,28 +37,28 @@ class PostViewsTests(TestCase):
         self.post_index = reverse('posts:index')
         self.post_group = reverse(
             'posts:group_list',
-            kwargs={'slug': f'{self.group.slug}'}
+            kwargs={'slug': self.group.slug}
         )
         self.post_other_group = reverse(
             'posts:group_list',
-            kwargs={'slug': f'{self.other_group.slug}'}
+            kwargs={'slug': self.other_group.slug}
         )
         self.post_profile = reverse(
             'posts:profile',
-            kwargs={'username': f'{self.user}'}
+            kwargs={'username': self.user}
         )
         self.post_posts = reverse(
             'posts:post_detail',
-            kwargs={'post_id': f'{self.post.id}'}
+            kwargs={'post_id': self.post.id}
         )
         self.post_create = reverse('posts:post_create')
         self.post_edit = reverse(
             'posts:post_edit',
-            kwargs={'post_id': f'{self.post.id}'}
+            kwargs={'post_id': self.post.id}
         )
 
     def test_views_correct_template(self):
-        """Проверяем соответствие view-функций адресам"""
+        """Проверяем соответствие view-функций адресам."""
         templates_names = {
             self.post_index: 'posts/index.html',
             self.post_group: 'posts/group_list.html',
@@ -73,58 +73,58 @@ class PostViewsTests(TestCase):
                 self.assertTemplateUsed(response, template)
 
     def test_views_correct_context_index(self):
-        """Проверяем соответствие контекста index"""
+        """Проверяем соответствие контекста index."""
         response = self.authorized_client.get(self.post_index)
-        first_object = response.context['page_obj'][0]
-        self.assertEqual(first_object, self.post)
+        page_object = response.context['page_obj'][0]
+        self.assertEqual(page_object, self.post)
 
     def test_views_correct_context_group_list(self):
-        """Проверяем соответствие контекста group_list"""
+        """Проверяем соответствие контекста group_list."""
         response = self.authorized_client.get(self.post_group)
-        first_object = response.context['page_obj'][0]
-        second_object = first_object.group
-        self.assertEqual(first_object, self.post)
-        self.assertEqual(second_object, self.group)
+        page_object = response.context['page_obj'][0]
+        group_object = page_object.group
+        self.assertEqual(page_object, self.post)
+        self.assertEqual(group_object, self.group)
 
     def test_views_correct_context_profile(self):
-        """Проверяем соответствие контекста profile"""
+        """Проверяем соответствие контекста profile."""
         response = self.authorized_client.get(self.post_group)
-        first_object = response.context['page_obj'][0]
-        second_object = first_object.author
-        self.assertEqual(first_object, self.post)
-        self.assertEqual(second_object, self.post.author)
+        page_object = response.context['page_obj'][0]
+        author_object = page_object.author
+        self.assertEqual(page_object, self.post)
+        self.assertEqual(author_object, self.post.author)
 
     def test_views_correct_context_post_detail(self):
-        """Проверяем соответствие контекста post_detail"""
+        """Проверяем соответствие контекста post_detail."""
         response = self.authorized_client.get(self.post_posts)
-        first_object = response.context['post']
-        second_object = response.context.get('post').pk
-        self.assertEqual(first_object, self.post)
-        self.assertEqual(second_object, self.post.pk)
+        post_object = response.context['post']
+        pk_object = response.context.get('post').pk
+        self.assertEqual(post_object, self.post)
+        self.assertEqual(pk_object, self.post.pk)
 
     def test_views_correct_context_post_edit(self):
-        """Проверяем соответствие контекста post_edit"""
+        """Проверяем соответствие контекста post_edit."""
         response = self.authorized_client.get(self.post_edit)
-        first_object = response.context['form']
-        second_object = response.context['post_id']
-        third_object = response.context['is_edit']
-        self.assertIsInstance(first_object, PostForm)
-        self.assertEqual(second_object, self.post.pk)
-        self.assertTrue(third_object)
+        form_object = response.context['form']
+        post_id_object = response.context['post_id']
+        is_edit_object = response.context['is_edit']
+        self.assertIsInstance(form_object, PostForm)
+        self.assertEqual(post_id_object, self.post.pk)
+        self.assertTrue(is_edit_object)
 
     def test_views_correct_context_post_create(self):
-        """Проверяем соответствие контекста post_create"""
+        """Проверяем соответствие контекста post_create."""
         response = self.authorized_client.get(self.post_create)
-        first_object = response.context['form']
-        second_object = response.context.get('is_edit', None)
-        self.assertIsInstance(first_object, PostForm)
-        self.assertIsNone(second_object)
+        form_object = response.context['form']
+        is_edit_object = response.context.get('is_edit', None)
+        self.assertIsInstance(form_object, PostForm)
+        self.assertIsNone(is_edit_object)
 
     def test_views_correct_post_creation(self):
-        """Проверяем что пост не попадает на страницу другой группы"""
+        """Проверяем что пост не попадает на страницу другой группы."""
         response = self.authorized_client.get(self.post_other_group)
-        first_object = len(response.context['page_obj'])
-        self.assertEqual(first_object, 0)
+        page_object = len(response.context['page_obj'])
+        self.assertEqual(page_object, 0)
 
 
 class PaginatorViewsTests(TestCase):
@@ -143,77 +143,27 @@ class PaginatorViewsTests(TestCase):
             description='Тестовый текст 2',
             slug='test_2-slug'
         )
-        cls.post_1 = Post.objects.create(
-            author=cls.user,
-            group=cls.group,
-            text='Тестовый заголовок 1',
-            pub_date='12.02.2022',
-        )
-        cls.post_2 = Post.objects.create(
-            author=cls.user,
-            group=cls.group,
-            text='Тестовый заголовок 2',
-            pub_date='13.02.2022',
-        )
-        cls.post_3 = Post.objects.create(
-            author=cls.user,
-            group=cls.group,
-            text='Тестовый заголовок 3',
-            pub_date='14.02.2022',
-        )
-        cls.post_4 = Post.objects.create(
-            author=cls.user,
-            group=cls.group,
-            text='Тестовый заголовок 4',
-            pub_date='15.02.2022',
-        )
-        cls.post_5 = Post.objects.create(
-            author=cls.user,
-            group=cls.group,
-            text='Тестовый заголовок 5',
-            pub_date='16.02.2022',
-        )
-        cls.post_6 = Post.objects.create(
-            author=cls.user,
-            group=cls.group,
-            text='Тестовый заголовок 6',
-            pub_date='17.02.2022',
-        )
-        cls.post_7 = Post.objects.create(
-            author=cls.user,
-            group=cls.group,
-            text='Тестовый заголовок 7',
-            pub_date='18.02.2022',
-        )
-        cls.post_8 = Post.objects.create(
-            author=cls.user,
-            group=cls.group,
-            text='Тестовый заголовок 8',
-            pub_date='19.02.2022',
-        )
-        cls.post_9 = Post.objects.create(
-            author=cls.user,
-            group=cls.group,
-            text='Тестовый заголовок 9',
-            pub_date='20.02.2022',
-        )
-        cls.post_10 = Post.objects.create(
+        objs = [
+            Post(
+                author=cls.user,
+                group=cls.group,
+                text='Тестовый заголовок %s' % i,
+                pub_date='%s.02.2022' % i,
+            )
+            for i in range(10)
+        ]
+        cls.posts = Post.objects.bulk_create(objs=objs)
+        cls.post_11 = Post.objects.create(
             author=cls.user,
             group=cls.other_group,
             text='Тестовый заголовок 10',
             pub_date='21.02.2022',
         )
-        cls.post_11 = Post.objects.create(
+        cls.post_12 = Post.objects.create(
             author=cls.other_user,
             group=cls.group,
             text='Тестовый заголовок 11',
             pub_date='22.02.2022',
-        )
-        cls.post_12 = Post.objects.create(
-            author=cls.user,
-            group=cls.group,
-            text='Тестовый заголовок 12',
-            pub_date='23.02.2022',
         )
         cls.post_13 = Post.objects.create(
             author=cls.user,
@@ -232,15 +182,15 @@ class PaginatorViewsTests(TestCase):
         self.post_index = reverse('posts:index')
         self.post_group = reverse(
             'posts:group_list',
-            kwargs={'slug': f'{self.group.slug}'}
+            kwargs={'slug': self.group.slug}
         )
         self.post_profile = reverse(
             'posts:profile',
-            kwargs={'username': f'{self.user}'}
+            kwargs={'username': self.user}
         )
 
     def test_views_paginator_first_page(self):
-        """Проверяем работу пажинатора, первая страница"""
+        """Проверяем работу пажинатора, первая страница."""
         paths = {
             self.post_index,
             self.post_group,
@@ -252,7 +202,7 @@ class PaginatorViewsTests(TestCase):
                 self.assertEqual(len(response.context['page_obj']), 10)
 
     def test_views_paginator_second_page(self):
-        """Проверяем работу пажинатора, вторая страница"""
+        """Проверяем работу пажинатора, вторая страница."""
         paths = {
             self.post_index: 3,
             self.post_group: 1,
@@ -260,5 +210,5 @@ class PaginatorViewsTests(TestCase):
         }
         for path, value in paths.items():
             with self.subTest(path=path):
-                response = self.authorized_client.get(path + '?page=2')
+                response = self.authorized_client.get(path, {'page': 2})
                 self.assertEqual(len(response.context['page_obj']), value)

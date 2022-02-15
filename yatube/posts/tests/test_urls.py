@@ -35,20 +35,20 @@ class PostURLTests(TestCase):
         self.post_index = reverse('posts:index')
         self.post_group = reverse(
             'posts:group_list',
-            kwargs={'slug': f'{self.group.slug}'}
+            kwargs={'slug': self.group.slug}
         )
         self.post_profile = reverse(
             'posts:profile',
-            kwargs={'username': f'{self.user}'}
+            kwargs={'username': self.user}
         )
         self.post_posts = reverse(
             'posts:post_detail',
-            kwargs={'post_id': f'{self.post.id}'}
+            kwargs={'post_id': self.post.id}
         )
         self.post_create = reverse('posts:post_create')
         self.post_edit = reverse(
             'posts:post_edit',
-            kwargs={'post_id': f'{self.post.id}'}
+            kwargs={'post_id': self.post.id}
         )
 
     def test_urls_auth_exists(self):
@@ -88,9 +88,11 @@ class PostURLTests(TestCase):
     def test_urls_non_auth_redirect(self):
         """Проверяем редиректы неавторизованного пользователя"""
         path_edit = self.post_edit
+        path_create = '/create/'
         responce_edit = f'/auth/login/?next={self.post_edit}'
+        responce_create = f'/auth/login/?next={self.post_create}'
         paths = {
-            '/create/': f'/auth/login/?next={self.post_create}',
+            path_create: responce_create,
             path_edit: responce_edit,
         }
         for path, responce in paths.items():
@@ -111,7 +113,7 @@ class PostURLTests(TestCase):
         )
 
     def test_urls_no_page(self):
-        """Проверяем недоступность несуществующей страницы"""
+        """Проверяем недоступность несуществующей страницы."""
         clients = {
             self.guest_client,
             self.authorized_client,
@@ -125,7 +127,7 @@ class PostURLTests(TestCase):
                 )
 
     def test_urls_correct_template(self):
-        """Проверяем соответствие темплейтов адресам"""
+        """Проверяем соответствие темплейтов адресам."""
         templates_names = {
             '/': 'posts/index.html',
             f'/group/{self.group.slug}/': 'posts/group_list.html',
