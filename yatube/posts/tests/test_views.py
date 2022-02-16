@@ -147,8 +147,8 @@ class PaginatorViewsTests(TestCase):
             Post(
                 author=cls.user,
                 group=cls.group,
-                text='Тестовый заголовок %s' % i,
-                pub_date='%s.02.2022' % i,
+                text=f'Тестовый заголовок {i}',
+                pub_date=f'{i}.02.2022',
             )
             for i in range(10)
         ]
