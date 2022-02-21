@@ -121,10 +121,12 @@ class PostURLTests(TestCase):
         }
         for client in clients:
             with self.subTest(client=client):
+                response = client.get('/unexisting_page/')
                 self.assertEqual(
-                    client.get('/unexisting_page/').status_code,
+                    response.status_code,
                     404,
                 )
+                self.assertTemplateUsed(response, 'core/404.html')
 
     def test_urls_correct_template(self):
         """Проверяем соответствие темплейтов адресам."""

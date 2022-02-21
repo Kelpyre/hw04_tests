@@ -47,10 +47,10 @@ class PostModelTest(TestCase):
         group_verbose = self.post._meta.get_field('group').verbose_name
         group_help = self.post._meta.get_field('group').help_text
         post_dict = {
-            group_verbose: 'Группа',
+            group_verbose: 'Group',
             group_help: 'Группа, к которой будет относиться пост',
-            text_verbose: 'Текст',
-            text_help: 'Текст поста',
+            text_verbose: 'Текст поста',
+            text_help: 'Текст нового поста',
             pub_date_verbose: 'Дата публикации',
             pub_date_help: 'Дата публикации поста',
             author_verbose: 'Автор',

@@ -1,8 +1,10 @@
+from django.core.cache import cache
 from django.contrib.auth import get_user_model
+from django.db.models.fields.files import ImageFieldFile
 from django.test import TestCase, Client
 from django.urls import reverse
 
-from posts.models import Post, Group
+from posts.models import Post, Group, Comment
 from posts.forms import PostForm
 
 User = get_user_model()
@@ -29,9 +31,15 @@ class PostViewsTests(TestCase):
             text='Тестовый заголовок',
             pub_date='12.02.2022',
         )
+        cls.comment = Comment.objects.create(
+            post=cls.post,
+            author=cls.user,
+            text='Комментарий'
+        )
 
     def setUp(self):
         self.user = PostViewsTests.user
+        self.guest_client = Client()
         self.authorized_client = Client()
         self.authorized_client.force_login(self.user)
         self.post_index = reverse('posts:index')
@@ -55,6 +63,10 @@ class PostViewsTests(TestCase):
         self.post_edit = reverse(
             'posts:post_edit',
             kwargs={'post_id': self.post.id}
+        )
+        self.post_comment = reverse(
+            'posts:add_comment',
+            kwargs={'post_id': self.post.id},
         )
 
     def test_views_correct_template(self):
@@ -125,6 +137,59 @@ class PostViewsTests(TestCase):
         response = self.authorized_client.get(self.post_other_group)
         page_object = len(response.context['page_obj'])
         self.assertEqual(page_object, 0)
+
+    def test_views_correct_context_image(self):
+        """Проверяем что картинка передается с контекстом."""
+        path_dict = {
+            self.post_index,
+            self.post_profile,
+            self.post_group,
+        }
+        for path in path_dict:
+            with self.subTest(path=path):
+                response = self.authorized_client.get(path)
+                obj = response.context['page_obj'][0].image
+                self.assertIsInstance(obj, ImageFieldFile)
+        response = self.authorized_client.get(self.post_posts)
+        obj = response.context['post'].image
+        self.assertIsInstance(obj, ImageFieldFile)
+
+    def test_views_correct_context_comment(self):
+        """Проверяем что комменты попадают в контекст."""
+        response = self.guest_client.get(self.post_posts)
+        obj = response.context['comments']
+        self.assertIn(self.comment, obj)
+
+    def test_views_no_auth_comment_creation(self):
+        """
+        Проверяем что неавторизованный пользователь не может комментировать.
+        """
+        comments_count = Comment.objects.count()
+        data = {
+            'text': 'Комментарий',
+        }
+        response = self.guest_client.post(
+            self.post_comment,
+            data=data,
+            follow=True
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(comments_count, Comment.objects.count())
+
+    def test_views_index_cache(self):
+        """Проверяем что главная страница кешируется на 20 секунд."""
+        response = self.guest_client.get(self.post_index)
+        page_context = response.content
+        new_post = Post.objects.create(
+            text='Кешированный текст',
+            author=self.user,
+        )
+        cache.set('index_page', page_context)
+        self.assertEqual(response.content, cache.get('index_page'))
+        new_post.delete()
+        self.assertEqual(response.content, cache.get('index_page'))
+        cache.clear()
+        self.assertNotEqual(response.content, cache.get('index_page'))
 
 
 class PaginatorViewsTests(TestCase):

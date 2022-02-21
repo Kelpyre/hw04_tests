@@ -6,8 +6,8 @@ from django.http import HttpRequest, Http404, HttpResponse
 from django.core.paginator import Paginator, Page
 from django.contrib.auth.decorators import login_required
 
-from .models import Post, Group, User
-from .forms import PostForm
+from .models import Post, Group, User, Comment
+from .forms import PostForm, CommentForm
 
 WORD_COUNT = 30
 POST_COUNT = 10
@@ -61,7 +61,7 @@ def group_list(request: HttpRequest, slug: str) -> HttpResponse:
 
 
 def profile(request: HttpRequest, username: str) -> HttpResponse:
-    """Функция вызова страницы пользователя"""
+    """Функция вызова страницы пользователя."""
     template: str = 'posts/profile.html'
     author: Union[User, Http404] = get_object_or_404(User, username=username)
     posts: QuerySet = author.posts.all()
@@ -78,26 +78,33 @@ def profile(request: HttpRequest, username: str) -> HttpResponse:
 
 
 def post_detail(request: HttpRequest, post_id: int) -> HttpResponse:
-    """Функция вызова страницы поста"""
+    """Функция вызова страницы поста."""
     template: str = 'posts/post_detail.html'
     post: Union[Post, Http404] = get_object_or_404(Post, pk=post_id)
     author: str = post.author
     posts_count: int = author.posts.all().count()
     title: str = f'Пост {post.text[:WORD_COUNT]}'
-    context: dict[str, Union[str, Post, int]] = {
+    form: CommentForm = CommentForm(request.POST or None)
+    comments: Comment = post.comments.all()
+    context: dict[str, Union[str, Post, int, CommentForm, Comment]] = {
         'title': title,
         'post': post,
         'posts_count': posts_count,
+        'comments': comments,
+        'form': form,
     }
     return render(request, template, context)
 
 
 @login_required
 def post_create(request: HttpRequest) -> HttpResponse:
-    """Функция вызова страницы создания поста"""
+    """Функция вызова страницы создания поста."""
     template: str = 'posts/create_post.html'
     title: str = 'Добавить запись'
-    form: PostForm = PostForm(request.POST or None)
+    form: PostForm = PostForm(
+        request.POST or None,
+        files=request.FILES or None,
+    )
     if form.is_valid():
         added_post = form.save(commit=False)
         added_post.author = request.user
@@ -112,13 +119,16 @@ def post_create(request: HttpRequest) -> HttpResponse:
 
 @login_required
 def post_edit(request: HttpRequest, post_id: int) -> HttpResponse:
-    """Функция вызова страницы редактирования поста"""
+    """Функция вызова страницы редактирования поста."""
     template: str = 'posts/create_post.html'
     title: str = 'Редактировать запись'
     post = get_object_or_404(Post, pk=post_id)
     if post.author != request.user:
         return redirect('posts:post_detail', post_id=post_id)
-    form: PostForm = PostForm(request.POST or None, instance=post)
+    form: PostForm = PostForm(
+        request.POST or None,
+        files=request.FILES or None,
+        instance=post,)
     if form.is_valid():
         form.save()
         return redirect('posts:post_detail', post_id=post_id)
@@ -129,3 +139,16 @@ def post_edit(request: HttpRequest, post_id: int) -> HttpResponse:
         'post_id': post_id
     }
     return render(request, template, context)
+
+
+@login_required
+def add_comment(request: HttpRequest, post_id: int) -> HttpResponse:
+    """Функция добавления комментария к посту."""
+    post: Post = Post.objects.get(pk=post_id)
+    form: CommentForm = CommentForm(request.POST or None)
+    if form.is_valid():
+        comment = form.save(commit=False)
+        comment.author = request.user
+        comment.post = post
+        comment.save()
+    return redirect('posts:post_detail', post_id=post_id)
